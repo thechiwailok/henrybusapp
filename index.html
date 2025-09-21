@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>HK Bus</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    /* ========== Base + Liquid Glass Theme ========== */
+    :root{
+      --bg1:#0a0b10;
+      --bg2:#131726;
+      --accent:#5df0c0;
+      --text:#e9ecf1;
+      --muted:#a8b0bf;
+      --card-border:rgba(255,255,255,0.18);
+      --shine:rgba(255,255,255,0.28);
+      --shadow:rgba(0,0,0,0.35);
+      --warning:#ffd57a;
+      --good:#9ef3bd;
+      --pill:#2a2f3b;
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'PingFang HK','Microsoft JhengHei', 'Noto Sans', sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 20% 10%, #1a2a5a40 0%, #0000 70%),
+        radial-gradient(1200px 900px at 80% 30%, #2a7f6240 0%, #0000 65%),
+        linear-gradient(160deg, var(--bg1), var(--bg2));
+      overflow: hidden;
+    }
+    .app{
+      height:100%;
+      display:grid;
+      grid-template-rows: auto 1fr;
+    }
+    header{
+      position:sticky; top:0; z-index:10;
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      padding:14px 18px;
+      backdrop-filter: blur(12px) saturate(140%);
+      -webkit-backdrop-filter: blur(12px) saturate(140%);
+      background:linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+      border-bottom:1px solid var(--card-border);
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px;
+    }
+    .logo{
+      width:28px; height:28px; border-radius:8px;
+      background: radial-gradient(120% 120% at 20% 10%, rgba(255,255,255,0.65), rgba(255,255,255,0) 40%),
+                  linear-gradient(145deg, #6df5d0, #4dd6f3);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 6px 16px rgba(0,0,0,0.35);
+    }
+    h1{font-size:16px; margin:0; letter-spacing:0.3px}
+
+    /* Tabs */
+    .tabs{
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .tab-btn{
+      appearance:none; border:1px solid var(--card-border); color:var(--text);
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05));
+      backdrop-filter: blur(6px) saturate(160%); -webkit-backdrop-filter: blur(6px) saturate(160%);
+      border-radius:12px; padding:8px 12px; cursor:pointer; font-size:14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 12px var(--shadow);
+      transition: transform .15s ease, box-shadow .15s ease, background .2s ease;
+    }
+    .tab-btn[aria-selected="true"]{
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+      outline:1px solid rgba(255,255,255,0.25);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 6px 18px var(--shadow);
+    }
+    .tab-btn:active{ transform: translateY(1px); }
+
+    /* Layout */
+    .content{
+      height:100%; overflow:auto;
+      padding:16px;
+    }
+    .grid{
+      display:grid; grid-template-columns: 360px 1fr; gap:16px;
+    }
+    @media (max-width: 960px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    /* Glass cards */
+    .card{
+      position:relative; overflow:hidden;
+      border-radius:20px;
+      border:1px solid var(--card-border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+      backdrop-filter: blur(14px) saturate(160%);
+      -webkit-backdrop-filter: blur(14px) saturate(160%);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.35),
+        0 12px 30px rgba(0,0,0,0.35);
+    }
+    .card::before{
+      /* glossy top highlight */
+      content:""; position:absolute; inset:0 0 auto 0; height:55%;
+      background: radial-gradient(120% 120% at 10% 0%, var(--shine), transparent 55%);
+      pointer-events:none;
+    }
+    .card .inner{ padding:14px; }
+    .section-title{
+      font-size:12px; letter-spacing:1px; color:var(--muted); text-transform:uppercase;
+      margin:0 0 10px 0;
+    }
+
+    /* Controls */
+    .controls{ display:flex; flex-wrap:wrap; gap:10px; }
+    label.small{ display:flex; flex-direction:column; gap:6px; font-size:13px; color:var(--muted); }
+    input, select, button{
+      color:var(--text);
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+      border:1px solid var(--card-border); border-radius:12px;
+      padding:10px 12px; font-size:14px;
+      backdrop-filter: blur(8px) saturate(140%); -webkit-backdrop-filter: blur(8px) saturate(140%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 12px var(--shadow);
+    }
+    button{ cursor:pointer }
+    button.accent{
+      background: linear-gradient(160deg, rgba(93,240,192,0.3), rgba(93,240,192,0.15));
+      border-color: rgba(93,240,192,0.55);
+    }
+
+    /* Lists */
+    .stop{ padding:10px 0; border-top:1px solid rgba(255,255,255,0.08); }
+    .stop:first-child{ border-top:0; }
+    .stop-name{ font-weight:600; }
+    .eta-line{ display:flex; gap:8px; align-items:center; color:var(--muted); flex-wrap:wrap; }
+    .pill{
+      border:1px solid rgba(255,255,255,0.18);
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+      border-radius:999px; padding:2px 8px; font-size:12px; color:var(--text);
+    }
+    .pill.good{ color:var(--good); border-color: rgba(158,243,189,0.45); }
+    .pill.soon{ color:var(--warning); border-color: rgba(255,213,122,0.45); }
+    .muted{ color:var(--muted); }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .hint{ font-size:12px; color:var(--muted); }
+
+    /* Home popular routes */
+    .popular{
+      display:grid; gap:12px; grid-template-columns: repeat(2, minmax(0,1fr));
+    }
+    @media (max-width: 520px){
+      .popular{ grid-template-columns: 1fr; }
+    }
+    .route-chip{
+      display:flex; justify-content:space-between; align-items:center; gap:12px;
+      padding:12px; border-radius:16px; border:1px solid var(--card-border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 6px 16px var(--shadow);
+      cursor:pointer; transition: transform .12s ease;
+    }
+    .route-chip:active{ transform: translateY(1px); }
+    .route-code{
+      font-weight:800; letter-spacing:0.5px; font-size:16px; color:var(--text);
+    }
+    .route-desc{ font-size:12px; color:var(--muted); }
+
+    /* Tab panels */
+    .panel{ display:none; }
+    .panel[aria-hidden="false"]{ display:block; }
+
+    /* Footer note in about */
+    .note{ font-size:13px; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <h1>HK Bus</h1>
+      </div>
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <button class="tab-btn" role="tab" aria-selected="true" aria-controls="home" id="tab-home">Home</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="search" id="tab-search">Search</button>
+        <button class="tab-btn" role="tab" aria-selected="false" aria-controls="about" id="tab-about">About</button>
+      </nav>
+    </header>
+
+    <main class="content">
+      <!-- Home -->
+      <section class="panel" id="home" role="tabpanel" aria-labelledby="tab-home" aria-hidden="false">
+        <div class="grid">
+          <div class="card">
+            <div class="inner">
+              <h2 class="section-title">Popular routes</h2>
+              <div class="popular" id="popularRoutes">
+                <!-- Filled by JS -->
+              </div>
+              <div class="hint" style="margin-top:10px;">Tap a route to load stops and live ETAs.</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="inner">
+              <h2 class="section-title">Live board</h2>
+              <div class="row" style="margin-bottom:10px;">
+                <button id="homeRefresh" class="accent">Refresh ETA</button>
+              </div>
+              <div id="homeMeta" class="muted">—</div>
+              <div id="homeStops" style="margin-top:8px;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Search -->
+      <section class="panel" id="search" role="tabpanel" aria-labelledby="tab-search" aria-hidden="true">
+        <div class="grid">
+          <div class="card">
+            <div class="inner">
+              <h2 class="section-title">Find a route</h2>
+              <div class="controls">
+                <label class="small">
+                  <span>Route</span>
+                  <input id="routeInput" list="routeList" placeholder="e.g. 269D" />
+                  <datalist id="routeList"></datalist>
+                </label>
+                <label class="small">
+                  <span>Direction</span>
+                  <select id="direction">
+                    <option value="outbound">Outbound</option>
+                    <option value="inbound">Inbound</option>
+                  </select>
+                </label>
+                <label class="small">
+                  <span>Service</span>
+                  <select id="serviceType">
+                    <option value="1">1 (Regular)</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                  </select>
+                </label>
+                <button id="loadBtn" class="accent">Load</button>
+                <button id="refreshBtn">Refresh ETA</button>
+              </div>
+              <div class="hint" id="hint" style="margin-top:6px;">Enter a route and press Load.</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="inner">
+              <h2 class="section-title">Route info</h2>
+              <div id="routeInfo" class="muted">—</div>
+              <div id="stopsContainer" style="margin-top:10px;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- About -->
+      <section class="panel" id="about" role="tabpanel" aria-labelledby="tab-about" aria-hidden="true">
+        <div class="grid">
+          <div class="card">
+            <div class="inner">
+              <h2 class="section-title">About</h2>
+              <p>This simple, privacy-friendly bus app shows real-time ETAs for KMB Bus routes using official open data.</p>
+              <p><strong>Made by Henry</strong>. No sign-up, no ads, just buses.</p>
+              <p class="note">Data sources: KMB/LWB real-time API (data.etabus.gov.hk). You can optionally add Hong Kong government data (Data.gov.hk, CSDI) for maps or extras.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+<script>
+(() => {
+  // ------- API base (KMB + Long Win) -------
+  const API = 'https://data.etabus.gov.hk/v1/transport/kmb';
+
+  // ------- State -------
+  const state = {
+    // Shared
+    lang: 'en',
+    // Search panel
+    route: '',
+    direction: 'outbound',
+    serviceType: '1',
+    stops: [],
+    stopETAs: new Map(),
+
+    // Home panel
+    homeCurrent: null, // {route, direction, serviceType}
+    homeStops: [],
+    homeETAs: new Map(),
+  };
+
+  // ------- Helpers -------
+  const $ = (id) => document.getElementById(id);
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const fmtTime = (iso, locale='en-HK') => new Date(iso).toLocaleTimeString(locale, {hour:'2-digit', minute:'2-digit'});
+  const minutesDiff = (fromISO) => Math.round((new Date(fromISO) - new Date())/60000);
+
+  // ------- API calls -------
+  async function fetchJSON(url){
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    return res.json();
+  }
+  async function getRouteList(){
+    const json = await fetchJSON(`${API}/route/`);
+    return Array.from(new Set(json.data.map(r=>r.route))).sort((a,b)=>a.localeCompare(b,'en',{numeric:true}));
+  }
+  async function getRouteMeta(route, direction, serviceType){
+    const {data} = await fetchJSON(`${API}/route/${encodeURIComponent(route)}/${direction}/${serviceType}`);
+    return data;
+  }
+  async function getRouteStops(route, direction, serviceType){
+    const {data} = await fetchJSON(`${API}/route-stop/${encodeURIComponent(route)}/${direction}/${serviceType}`);
+    return data; // {stop, seq}
+  }
+  async function getStopDetail(stopId){
+    const {data} = await fetchJSON(`${API}/stop/${stopId}`);
+    return data; // {stop, name_en, name_tc, lat, long}
+  }
+  async function getStopETA(stopId, routeFilter){
+    const {data} = await fetchJSON(`${API}/eta/${stopId}`);
+    return data.filter(x=>!routeFilter || x.route===routeFilter).sort((a,b)=> new Date(a.eta)-new Date(b.eta));
+  }
+
+  // ------- UI rendering -------
+  function renderStops(containerId, stops, etaMap, meta=null, locale='en-HK'){
+    const c = $(containerId);
+    if(!stops?.length){ c.innerHTML = ''; return; }
+    const rows = stops.map(s=>{
+      const etas = (etaMap.get(s.id)||[]).slice(0,3);
+      const lines = etas.length ? etas.map(e=>{
+        const mins = minutesDiff(e.eta);
+        const when = mins <= 0 ? 'Due' : `${mins} min`;
+        const cls = mins <= 2 ? 'pill soon' : 'pill good';
+        const headsign = e.dest_en; // could toggle language
+        return `<div class="eta-line">
+          <span class="${cls}">${when}</span>
+          <span>to ${headsign}</span>
+          <span class="muted">(${fmtTime(e.eta, locale)})</span>
+        </div>`;
+      }).join('') : `<div class="eta-line"><span class="muted">No ETA</span></div>`;
+      return `<div class="stop">
+        <div class="stop-name">${s.seq}. ${s.name_en}</div>
+        ${lines}
+      </div>`;
+    }).join('');
+    c.innerHTML = rows;
+    if(meta && $('routeInfo')) $('routeInfo').innerHTML = `${meta.orig_en} → ${meta.dest_en} (service ${meta.service_type||'1'})`;
+  }
+
+  // ------- Search flow -------
+  async function loadSearchRoute(){
+    try{
+      $('hint').textContent = 'Loading…';
+      state.route = $('routeInput').value.trim().toUpperCase();
+      state.direction = $('direction').value;
+      state.serviceType = $('serviceType').value;
+      if(!state.route) return;
+
+      const [meta, rStops] = await Promise.all([
+        getRouteMeta(state.route, state.direction, state.serviceType),
+        getRouteStops(state.route, state.direction, state.serviceType),
+      ]);
+
+      const stops = [];
+      for(let i=0;i<rStops.length;i+=12){
+        const chunk = rStops.slice(i,i+12);
+        const details = await Promise.all(chunk.map(s=>getStopDetail(s.stop)));
+        details.forEach((d, idx)=>{
+          stops.push({ seq: chunk[idx].seq, id: d.stop, name_en: d.name_en, lat: d.lat, long: d.long });
+        });
+        await sleep(60);
+      }
+      stops.sort((a,b)=>a.seq-b.seq);
+      state.stops = stops;
+
+      // Prime ETAs
+      state.stopETAs = new Map();
+      await refreshSearchETAs();
+
+      $('hint').textContent = '';
+      $('routeInfo').innerHTML = `${meta.orig_en} → ${meta.dest_en} (service ${state.serviceType})`;
+    }catch(e){
+      console.error(e);
+      $('hint').textContent = 'Unable to load route. Check route/direction/service.';
+      state.stops = []; state.stopETAs = new Map();
+      $('stopsContainer').innerHTML = '';
+    }
+  }
+  async function refreshSearchETAs(){
+    if(!state.stops.length) return;
+    const ids = state.stops.map(s=>s.id);
+    for(let i=0;i<ids.length;i+=10){
+      const batch = ids.slice(i,i+10);
+      const results = await Promise.all(batch.map(id=>getStopETA(id, state.route)));
+      results.forEach((etas, idx)=> state.stopETAs.set(batch[idx], etas));
+      renderStops('stopsContainer', state.stops, state.stopETAs);
+      await sleep(100);
+    }
+  }
+
+  // ------- Home popular routes -------
+  const popular = [
+    // KMB
+    { route:'269D', direction:'outbound', serviceType:'1', label:'Tin Shui Wai ↔ Kowloon Bay' },
+    { route:'268X', direction:'outbound', serviceType:'1', label:'Tin Shui Wai ↔ Mong Kok' },
+    { route:'68X',  direction:'outbound', serviceType:'1', label:'Long Ping/WKS ↔ Mong Kok' },
+    { route:'170',  direction:'outbound', serviceType:'1', label:'Sha Tin ↔ Hong Kong Island' }, // joint but in KMB feed
+    { route:'59X',  direction:'outbound', serviceType:'1', label:'Tuen Mun ↔ Mong Kok' },
+    { route:'73X',  direction:'outbound', serviceType:'1', label:'Yuen Long ↔ Causeway Bay' },
+    // Long Win (Airport)
+    { route:'A31',  direction:'outbound', serviceType:'1', label:'Tsuen Wan ↔ Airport (LWB)' },
+    { route:'E34A', direction:'outbound', serviceType:'1', label:'Tin Shui Wai ↔ Airport (LWB)' },
+  ];
+
+  function renderPopular(){
+    const box = $('popularRoutes');
+    box.innerHTML = popular.map(p=>{
+      return `<div class="route-chip" data-route="${p.route}" data-dir="${p.direction}" data-svc="${p.serviceType}">
+        <div>
+          <div class="route-code">${p.route}</div>
+          <div class="route-desc">${p.label}</div>
+        </div>
+        <div class="pill">Tap</div>
+      </div>`;
+    }).join('');
+    [...box.querySelectorAll('.route-chip')].forEach(el=>{
+      el.addEventListener('click', ()=> selectPopular(el.dataset.route, el.dataset.dir, el.dataset.svc));
+    });
+  }
+
+  async function selectPopular(route, direction, serviceType){
+    try{
+      state.homeCurrent = {route, direction, serviceType};
+      $('homeMeta').textContent = 'Loading…';
+      const [meta, rStops] = await Promise.all([
+        getRouteMeta(route, direction, serviceType),
+        getRouteStops(route, direction, serviceType),
+      ]);
+      const stops = [];
+      for(let i=0;i<rStops.length;i+=12){
+        const chunk = rStops.slice(i,i+12);
+        const details = await Promise.all(chunk.map(s=>getStopDetail(s.stop)));
+        details.forEach((d, idx)=>{
+          stops.push({ seq: chunk[idx].seq, id: d.stop, name_en: d.name_en, lat: d.lat, long: d.long });
+        });
+        await sleep(60);
+      }
+      stops.sort((a,b)=>a.seq-b.seq);
+      state.homeStops = stops;
+      state.homeETAs = new Map();
+
+      $('homeMeta').textContent = `${meta.route} • ${meta.orig_en} → ${meta.dest_en} (service ${serviceType})`;
+      await refreshHomeETAs();
+    }catch(e){
+      console.error(e);
+      $('homeMeta').textContent = 'Unable to load that route.';
+      $('homeStops').innerHTML = '';
+    }
+  }
+
+  async function refreshHomeETAs(){
+    if(!state.homeStops.length || !state.homeCurrent) return;
+    const ids = state.homeStops.map(s=>s.id);
+    for(let i=0;i<ids.length;i+=10){
+      const batch = ids.slice(i,i+10);
+      const results = await Promise.all(batch.map(id=>getStopETA(id, state.homeCurrent.route)));
+      results.forEach((etas, idx)=> state.homeETAs.set(batch[idx], etas));
+      // render partial as it streams in
+      const html = state.homeStops.map(s=>{
+        const etas = (state.homeETAs.get(s.id)||[]).slice(0,3);
+        const lines = etas.length ? etas.map(e=>{
+          const mins = minutesDiff(e.eta);
+          const when = mins <= 0 ? 'Due' : `${mins} min`;
+          const cls = mins <= 2 ? 'pill soon' : 'pill good';
+          return `<div class="eta-line">
+            <span class="${cls}">${when}</span>
+            <span>to ${e.dest_en}</span>
+            <span class="muted">(${fmtTime(e.eta)})</span>
+          </div>`;
+        }).join('') : `<div class="eta-line"><span class="muted">No ETA</span></div>`;
+        return `<div class="stop">
+          <div class="stop-name">${s.seq}. ${s.name_en}</div>
+          ${lines}
+        </div>`;
+      }).join('');
+      $('homeStops').innerHTML = html;
+      await sleep(100);
+    }
+  }
+
+  // ------- Tabs -------
+  const tabs = [
+    {btn:'tab-home', panel:'home'},
+    {btn:'tab-search', panel:'search'},
+    {btn:'tab-about', panel:'about'},
+  ];
+  function switchTab(id){
+    tabs.forEach(t=>{
+      const selected = (t.btn===id);
+      $(t.btn).setAttribute('aria-selected', selected?'true':'false');
+      $(t.panel).setAttribute('aria-hidden', selected?'false':'true');
+    });
+  }
+
+  // ------- Wire up -------
+  $('tab-home').addEventListener('click', ()=> switchTab('tab-home'));
+  $('tab-search').addEventListener('click', ()=> switchTab('tab-search'));
+  $('tab-about').addEventListener('click', ()=> switchTab('tab-about'));
+
+  $('loadBtn').addEventListener('click', loadSearchRoute);
+  $('refreshBtn').addEventListener('click', refreshSearchETAs);
+  $('homeRefresh').addEventListener('click', refreshHomeETAs);
+
+  // Load route list for search autocomplete
+  getRouteList().then(list=>{
+    $('routeList').innerHTML = list.map(r=>`<option value="${r}"></option>`).join('');
+  }).catch(console.error);
+
+  // Render popular + preselect a Yuen Long–friendly pick
+  renderPopular();
+  selectPopular('268X','outbound','1'); // good default for NWNT users
+})();
+</script>
+</body>
+</html>
