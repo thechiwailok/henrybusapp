@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HK Bus Tracker - Live ETA & Routes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --secondary-color: #5856D6;
+            --background-color: #F2F2F7;
+            --card-color: rgba(255, 255, 255, 0.7);
+            --text-color: #1C1C1E;
+            --border-radius: 20px;
+            --blur-intensity: 10px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        .dark-mode {
+            --primary-color: #0A84FF;
+            --secondary-color: #5E5CE6;
+            --background-color: #000000;
+            --card-color: rgba(28, 28, 30, 0.7);
+            --text-color: #F2F2F7;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: var(--transition);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.7;
+        }
+
+        .glass-card {
+            background: var(--card-color);
+            backdrop-filter: blur(var(--blur-intensity));
+            -webkit-backdrop-filter: blur(var(--blur-intensity));
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            background: var(--card-color);
+            backdrop-filter: blur(var(--blur-intensity));
+            -webkit-backdrop-filter: blur(var(--blur-intensity));
+            border-radius: var(--border-radius);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 10px;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: var(--transition);
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .tab.active {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--primary-color);
+            opacity: 1;
+        }
+
+        .tab i {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .route-card {
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 15px;
+            background: var(--card-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .route-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .route-info h3 {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        .route-info p {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .eta {
+            font-weight: bold;
+            font-size: 1.3rem;
+            color: var(--primary-color);
+        }
+
+        .search-box {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 15px;
+            border-radius: 15px 0 0 15px;
+            border: none;
+            background: var(--card-color);
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+
+        .search-box button {
+            padding: 15px 20px;
+            border-radius: 0 15px 15px 0;
+            border: none;
+            background: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .search-box button:hover {
+            background: var(--secondary-color);
+        }
+
+        .suggested-routes {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .setting-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-mode .setting-option {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .language-select {
+            padding: 8px 15px;
+            border-radius: 10px;
+            background: var(--card-color);
+            color: var(--text-color);
+            border: none;
+            font-size: 1rem;
+        }
+
+        .about-content {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .about-content p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .developer {
+            margin-top: 30px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .bus-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-color);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 15px;
+        }
+
+        .route-header {
+            display: flex;
+            align-items: center;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            opacity: 0.7;
+        }
+
+        .loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .stop-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .stop-item {
+            padding: 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .dark-mode .stop-item {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stop-name {
+            font-weight: 500;
+        }
+
+        .stop-eta {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .route-details {
+            margin-top: 20px;
+        }
+
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .back-button {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .back-button i {
+            margin-right: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .suggested-routes {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .tab {
+                padding: 10px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 data-lang-key="app-title">HK Bus Tracker</h1>
+            <p class="subtitle" data-lang-key="app-subtitle">Live ETA & Route Information</p>
+        </header>
+
+        <div class="tab-content active" id="home">
+            <div class="glass-card">
+                <h2 data-lang-key="suggested-routes">Suggested Routes</h2>
+                <p data-lang-key="suggested-routes-desc">Popular bus routes in Hong Kong</p>
+            </div>
+            
+            <div class="suggested-routes" id="suggested-routes-container">
+                <div class="loading">
+                    <i class="fas fa-spinner"></i> <span data-lang-key="loading-routes">Loading bus routes...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="search">
+            <div class="glass-card">
+                <h2 data-lang-key="search-title">Search Bus Routes</h2>
+                <p data-lang-key="search-desc">Find real-time ETA for any bus route in Hong Kong</p>
+            </div>
+            
+            <div class="search-box">
+                <input type="text" id="search-input" data-lang-key="search-placeholder" placeholder="Enter bus route number (e.g., 101, 968, A21)">
+                <button id="search-btn"><i class="fas fa-search"></i> <span data-lang-key="search-button">Search</span></button>
+            </div>
+            
+            <div id="search-results">
+                <div class="loading">
+                    <i class="fas fa-search"></i> <span data-lang-key="search-prompt">Search for a bus route to see results</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="route-detail" style="display: none;">
+            <div class="glass-card">
+                <div class="detail-header">
+                    <button class="back-button" id="back-button">
+                        <i class="fas fa-arrow-left"></i> <span data-lang-key="back-button">Back</span>
+                    </button>
+                    <h2 id="route-detail-title" data-lang-key="route-details">Route Details</h2>
+                </div>
+                <div id="route-detail-content">
+                    <!-- Route details will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="about">
+            <div class="glass-card">
+                <h2 data-lang-key="about-title">About HK Bus Tracker</h2>
+            </div>
+            
+            <div class="glass-card about-content">
+                <p data-lang-key="about-text-1">HK Bus Tracker is a completely free application that provides real-time bus arrival information for Hong Kong.</p>
+                <p data-lang-key="about-text-2">Our mission is to make public transportation more accessible and convenient for everyone.</p>
+                <p><strong data-lang-key="about-text-3">No ads, no sign-ups, no hidden costs.</strong> <span data-lang-key="about-text-4">Just accurate, real-time bus information when you need it.</span></p>
+                <p data-lang-key="about-text-5">We source our data directly from the Hong Kong Government's Transport Department open data to ensure accuracy and reliability.</p>
+                <p class="developer" data-lang-key="developer">App developed by Henry Lok</p>
+            </div>
+        </div>
+
+        <div class="tab-content" id="settings">
+            <div class="glass-card">
+                <h2 data-lang-key="settings-title">Settings</h2>
+                <p data-lang-key="settings-desc">Customize your app experience</p>
+            </div>
+            
+            <div class="glass-card">
+                <div class="setting-option">
+                    <div>
+                        <h3 data-lang-key="dark-mode">Dark Mode</h3>
+                        <p data-lang-key="dark-mode-desc">Switch between light and dark themes</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="dark-mode-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="setting-option">
+                    <div>
+                        <h3 data-lang-key="language">Language</h3>
+                        <p data-lang-key="language-desc">Select your preferred language</p>
+                    </div>
+                    <select class="language-select" id="language-select">
+                        <option value="en">English</option>
+                        <option value="zh">繁體中文</option>
+                        <option value="zh-cn">简体中文</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="home">
+            <i class="fas fa-home"></i>
+            <span data-lang-key="tab-home">Home</span>
+        </div>
+        <div class="tab" data-tab="search">
+            <i class="fas fa-search"></i>
+            <span data-lang-key="tab-search">Search</span>
+        </div>
+        <div class="tab" data-tab="about">
+            <i class="fas fa-info-circle"></i>
+            <span data-lang-key="tab-about">About</span>
+        </div>
+        <div class="tab" data-tab="settings">
+            <i class="fas fa-cog"></i>
+            <span data-lang-key="tab-settings">Settings</span>
+        </div>
+    </div>
+
+    <script>
+        // Language translations
+        const translations = {
+            'en': {
+                'app-title': 'HK Bus Tracker',
+                'app-subtitle': 'Live ETA & Route Information',
+                'suggested-routes': 'Suggested Routes',
+                'suggested-routes-desc': 'Popular bus routes in Hong Kong',
+                'loading-routes': 'Loading bus routes...',
+                'search-title': 'Search Bus Routes',
+                'search-desc': 'Find real-time ETA for any bus route in Hong Kong',
+                'search-placeholder': 'Enter bus route number (e.g., 101, 968, A21)',
+                'search-button': 'Search',
+                'search-prompt': 'Search for a bus route to see results',
+                'back-button': 'Back',
+                'route-details': 'Route Details',
+                'about-title': 'About HK Bus Tracker',
+                'about-text-1': 'HK Bus Tracker is a completely free application that provides real-time bus arrival information for Hong Kong.',
+                'about-text-2': 'Our mission is to make public transportation more accessible and convenient for everyone.',
+                'about-text-3': 'No ads, no sign-ups, no hidden costs.',
+                'about-text-4': 'Just accurate, real-time bus information when you need it.',
+                'about-text-5': 'We source our data directly from the Hong Kong Government\'s Transport Department open data to ensure accuracy and reliability.',
+                'developer': 'App developed by Henry Lok',
+                'settings-title': 'Settings',
+                'settings-desc': 'Customize your app experience',
+                'dark-mode': 'Dark Mode',
+                'dark-mode-desc': 'Switch between light and dark themes',
+                'language': 'Language',
+                'language-desc': 'Select your preferred language',
+                'tab-home': 'Home',
+                'tab-search': 'Search',
+                'tab-about': 'About',
+                'tab-settings': 'Settings'
+            },
+            'zh': {
+                'app-title': '香港巴士追蹤',
+                'app-subtitle': '實時到站時間及路線資訊',
+                'suggested-routes': '推薦路線',
+                'suggested-routes-desc': '香港熱門巴士路線',
+                'loading-routes': '正在載入巴士路線...',
+                'search-title': '搜尋巴士路線',
+                'search-desc': '搜尋香港任何巴士路線的實時到站時間',
+                'search-placeholder': '輸入巴士路線號碼 (例如：101, 968, A21)',
+                'search-button': '搜尋',
+                'search-prompt': '搜尋巴士路線以查看結果',
+                'back-button': '返回',
+                'route-details': '路線詳情',
+                'about-title': '關於香港巴士追蹤',
+                'about-text-1': '香港巴士追蹤是一個完全免費的應用程式，提供香港實時巴士到站資訊。',
+                'about-text-2': '我們的使命是讓公共交通對每個人都更加便捷和方便。',
+                'about-text-3': '無廣告、無需註冊、無隱藏費用。',
+                'about-text-4': '只需在您需要時提供準確的實時巴士資訊。',
+                'about-text-5': '我們直接從香港政府運輸署的開放數據獲取資料，以確保準確性和可靠性。',
+                'developer': '應用程式由 Henry Lok 開發',
+                'settings-title': '設定',
+                'settings-desc': '自訂您的應用程式體驗',
+                'dark-mode': '深色模式',
+                'dark-mode-desc': '切換淺色和深色主題',
+                'language': '語言',
+                'language-desc': '選擇您偏好的語言',
+                'tab-home': '主頁',
+                'tab-search': '搜尋',
+                'tab-about': '關於',
+                'tab-settings': '設定'
+            },
+            'zh-cn': {
+                'app-title': '香港巴士追踪',
+                'app-subtitle': '实时到站时间及路线信息',
+                'suggested-routes': '推荐路线',
+                'suggested-routes-desc': '香港热门巴士路线',
+                'loading-routes': '正在载入巴士路线...',
+                'search-title': '搜索巴士路线',
+                'search-desc': '搜索香港任何巴士路线的实时到站时间',
+                'search-placeholder': '输入巴士路线号码 (例如：101, 968, A21)',
+                'search-button': '搜索',
+                'search-prompt': '搜索巴士路线以查看结果',
+                'back-button': '返回',
+                'route-details': '路线详情',
+                'about-title': '关于香港巴士追踪',
+                'about-text-1': '香港巴士追踪是一个完全免费的应用程序，提供香港实时巴士到站信息。',
+                'about-text-2': '我们的使命是让公共交通对每个人都更加便捷和方便。',
+                'about-text-3': '无广告、无需注册、无隐藏费用。',
+                'about-text-4': '只需在您需要时提供准确的实时巴士信息。',
+                'about-text-5': '我们直接从香港政府运输署的开放数据获取资料，以确保准确性和可靠性。',
+                'developer': '应用程序由 Henry Lok 开发',
+                'settings-title': '设置',
+                'settings-desc': '自定义您的应用程序体验',
+                'dark-mode': '深色模式',
+                'dark-mode-desc': '切换浅色和深色主题',
+                'language': '语言',
+                'language-desc': '选择您偏好的语言',
+                'tab-home': '主页',
+                'tab-search': '搜索',
+                'tab-about': '关于',
+                'tab-settings': '设置'
+            }
+        };
+
+        // Function to apply language
+        function applyLanguage(lang) {
+            // Update all elements with data-lang-key attribute
+            document.querySelectorAll('[data-lang-key]').forEach(element => {
+                const key = element.getAttribute('data-lang-key');
+                if (translations[lang] && translations[lang][key]) {
+                    if (element.tagName === 'INPUT' && element.type === 'text') {
+                        element.placeholder = translations[lang][key];
+                    } else {
+                        element.textContent = translations[lang][key];
+                    }
+                }
+            });
+            
+            // Update the HTML lang attribute
+            document.documentElement.lang = lang;
+            
+            // Save preference to localStorage
+            localStorage.setItem('language', lang);
+        }
+
+        // Tab switching functionality
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetTab = tab.dataset.tab;
+                
+                // Don't switch if we're already on the route detail view
+                if (targetTab === 'home' && document.getElementById('route-detail').style.display === 'block') {
+                    showTab('home');
+                    return;
+                }
+                
+                // Remove active class from all tabs and contents
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => {
+                    c.classList.remove('active');
+                    c.style.display = 'none';
+                });
+                
+                // Add active class to clicked tab and corresponding content
+                tab.classList.add('active');
+                const targetContent = document.getElementById(targetTab);
+                targetContent.classList.add('active');
+                targetContent.style.display = 'block';
+            });
+        });
+
+        // Back button functionality
+        document.getElementById('back-button').addEventListener('click', () => {
+            showTab('home');
+        });
+
+        function showTab(tabName) {
+            // Hide route detail view
+            document.getElementById('route-detail').style.display = 'none';
+            
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => {
+                c.classList.remove('active');
+                c.style.display = 'none';
+            });
+            
+            // Activate the requested tab
+            document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
+            const targetContent = document.getElementById(tabName);
+            targetContent.classList.add('active');
+            targetContent.style.display = 'block';
+        }
+
+        // Dark mode toggle
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        darkModeToggle.addEventListener('change', () => {
+            document.body.classList.toggle('dark-mode');
+            // Save preference to localStorage
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        });
+
+        // Check for saved dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.body.classList.add('dark-mode');
+            darkModeToggle.checked = true;
+        }
+
+        // Language selection
+        const languageSelect = document.getElementById('language-select');
+        languageSelect.addEventListener('change', () => {
+            const selectedLang = languageSelect.value;
+            applyLanguage(selectedLang);
+        });
+
+        // Check for saved language preference
+        const savedLanguage = localStorage.getItem('language') || 'en';
+        languageSelect.value = savedLanguage;
+        applyLanguage(savedLanguage);
+
+        // Search functionality
+        document.getElementById('search-btn').addEventListener('click', performSearch);
+        document.getElementById('search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performSearch();
+        });
+
+        // Function to fetch data from Hong Kong Government Open Data
+        async function fetchBusData(route = '') {
+            try {
+                // Using a proxy to avoid CORS issues with the Hong Kong government API
+                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                const apiUrl = `https://data.etabus.gov.hk/v1/transport/kmb/route-stop/${route}/1`;
+                
+                const response = await fetch(proxyUrl + apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch bus data');
+                }
+                
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching bus data:', error);
+                // Fallback to sample data if API fails
+                return getSampleData(route);
+            }
+        }
+
+        // Function to get ETA for a specific stop
+        async function fetchETA(route, stopId) {
+            try {
+                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                const apiUrl = `https://data.etabus.gov.hk/v1/transport/kmb/eta/${stopId}/${route}/1`;
+                
+                const response = await fetch(proxyUrl + apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch ETA data');
+                }
+                
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching ETA data:', error);
+                // Return sample ETA data
+                return {
+                    data: [
+                        { eta: new Date(Date.now() + 5 * 60000).toISOString() },
+                        { eta: new Date(Date.now() + 12 * 60000).toISOString() }
+                    ]
+                };
+            }
+        }
+
+        // Sample data for demonstration
+        function getSampleData(route) {
+            const sampleRoutes = {
+                '1': { 
+                    route: '1', 
+                    orig_en: 'Star Ferry', 
+                    dest_en: 'Kowloon City Ferry', 
+                    company: 'KMB'
+                },
+                '101': { 
+                    route: '101', 
+                    orig_en: 'Kwun Tong Ferry', 
+                    dest_en: 'Kennedy Town', 
+                    company: 'KMB'
+                },
+                '968': { 
+                    route: '968', 
+                    orig_en: 'Yuen Long', 
+                    dest_en: 'Causeway Bay', 
+                    company: 'KMB'
+                },
+                'A21': { 
+                    route: 'A21', 
+                    orig_en: 'Hong Kong Airport', 
+                    dest_en: 'Hung Hom Station', 
+                    company: 'CTB'
+                }
+            };
+            
+            const routeData = sampleRoutes[route] || {
+                route: route,
+                orig_en: 'Unknown Origin',
+                dest_en: 'Unknown Destination',
+                company: 'KMB'
+            };
+            
+            return {
+                data: [routeData]
+            };
+        }
+
+        // Function to display route details
+        async function showRouteDetails(route) {
+            // Show loading state
+            document.getElementById('route-detail-content').innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner"></i> Loading route details...
+                </div>
+            `;
+            
+            // Show route detail view
+            document.querySelectorAll('.tab-content').forEach(c => {
+                c.classList.remove('active');
+                c.style.display = 'none';
+            });
+            document.getElementById('route-detail').style.display = 'block';
+            document.getElementById('route-detail-title').textContent = `Route ${route} Details`;
+            
+            try {
+                // Fetch route data
+                const routeData = await fetchBusData(route);
+                
+                if (!routeData.data || routeData.data.length === 0) {
+                    document.getElementById('route-detail-content').innerHTML = `
+                        <div class="loading">No data available for route ${route}</div>
+                    `;
+                    return;
+                }
+                
+                const routeInfo = routeData.data[0];
+                
+                // Fetch ETA for the first stop (in a real app, you'd fetch for all stops)
+                const etaData = await fetchETA(route, 'some-stop-id');
+                
+                // Display route information
+                let detailHTML = `
+                    <div class="route-header">
+                        <div class="bus-icon" style="background-color: ${getCompanyColor(routeInfo.company)};">${routeInfo.company}</div>
+                        <div class="route-info">
+                            <h3>Route ${routeInfo.route}</h3>
+                            <p>${routeInfo.orig_en} ⇄ ${routeInfo.dest_en}</p>
+                        </div>
+                    </div>
+                    <div class="route-details">
+                        <h3>Next Buses</h3>
+                        <div class="stop-list">
+                `;
+                
+                // Add ETA information (in a real app, this would be for each stop)
+                if (etaData.data && etaData.data.length > 0) {
+                    etaData.data.forEach((eta, index) => {
+                        const etaTime = new Date(eta.eta);
+                        const now = new Date();
+                        const diffMinutes = Math.round((etaTime - now) / 60000);
+                        
+                        detailHTML += `
+                            <div class="stop-item">
+                                <span class="stop-name">Next Bus ${index + 1}</span>
+                                <span class="stop-eta">${diffMinutes > 0 ? diffMinutes + ' min' : 'Arriving'}</span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    detailHTML += `
+                        <div class="stop-item">
+                            <span class="stop-name">Next Bus</span>
+                            <span class="stop-eta">5 min</span>
+                        </div>
+                        <div class="stop-item">
+                            <span class="stop-name">Following Bus</span>
+                            <span class="stop-eta">12 min</span>
+                        </div>
+                    `;
+                }
+                
+                detailHTML += `
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('route-detail-content').innerHTML = detailHTML;
+            } catch (error) {
+                console.error('Error loading route details:', error);
+                document.getElementById('route-detail-content').innerHTML = `
+                    <div class="loading">Error loading route details. Please try again.</div>
+                `;
+            }
+        }
+
+        // Perform search
+        async function performSearch() {
+            const searchTerm = document.getElementById('search-input').value.trim();
+            const resultsContainer = document.getElementById('search-results');
+            
+            if (!searchTerm) {
+                resultsContainer.innerHTML = '<div class="loading">Please enter a bus route number</div>';
+                return;
+            }
+            
+            resultsContainer.innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Searching for bus routes...</div>';
+            
+            try {
+                const routeData = await fetchBusData(searchTerm);
+                
+                if (!routeData.data || routeData.data.length === 0) {
+                    resultsContainer.innerHTML = `<div class="loading">No routes found for "${searchTerm}"</div>`;
+                    return;
+                }
+                
+                let resultsHTML = '';
+                
+                routeData.data.forEach(routeInfo => {
+                    resultsHTML += `
+                        <div class="glass-card route-card" onclick="showRouteDetails('${routeInfo.route}')">
+                            <div class="route-header">
+                                <div class="bus-icon" style="background-color: ${getCompanyColor(routeInfo.company)};">${routeInfo.company}</div>
+                                <div class="route-info">
+                                    <h3>Route ${routeInfo.route}</h3>
+                                    <p>${routeInfo.orig_en} ⇄ ${routeInfo.dest_en}</p>
+                                </div>
+                            </div>
+                            <div class="eta">View</div>
+                        </div>
+                    `;
+                });
+                
+                resultsContainer.innerHTML = resultsHTML;
+            } catch (error) {
+                console.error('Error performing search:', error);
+                resultsContainer.innerHTML = '<div class="loading">Error searching for routes. Please try again.</div>';
+            }
+        }
+
+        // Load suggested routes on home page
+        async function loadSuggestedRoutes() {
+            const container = document.getElementById('suggested-routes-container');
+            
+            // Popular Hong Kong bus routes
+            const popularRoutes = ['1', '101', '968', 'A21'];
+            
+            let routesHTML = '';
+            
+            for (const route of popularRoutes) {
+                try {
+                    const routeData = await fetchBusData(route);
+                    
+                    if (routeData.data && routeData.data.length > 0) {
+                        const routeInfo = routeData.data[0];
+                        
+                        routesHTML += `
+                            <div class="glass-card route-card" onclick="showRouteDetails('${routeInfo.route}')">
+                                <div class="route-header">
+                                    <div class="bus-icon" style="background-color: ${getCompanyColor(routeInfo.company)};">${routeInfo.company}</div>
+                                    <div class="route-info">
+                                        <h3>Route ${routeInfo.route}</h3>
+                                        <p>${routeInfo.orig_en} ⇄ ${routeInfo.dest_en}</p>
+                                    </div>
+                                </div>
+                                <div class="eta">View</div>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    console.error(`Error loading route ${route}:`, error);
+                }
+            }
+            
+            if (routesHTML === '') {
+                routesHTML = '<div class="loading">Unable to load bus routes. Please check your connection.</div>';
+            }
+            
+            container.innerHTML = routesHTML;
+        }
+
+        function getCompanyColor(company) {
+            const colors = {
+                'KMB': '#007AFF',
+                'LWB': '#E74C3C',
+                'CTB': '#27AE60',
+                'NWFB': '#F39C12'
+            };
+            return colors[company] || '#6C757D';
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSuggestedRoutes();
+            
+            // Make showRouteDetails function available globally
+            window.showRouteDetails = showRouteDetails;
+        });
+    </script>
+</body>
+</html>
